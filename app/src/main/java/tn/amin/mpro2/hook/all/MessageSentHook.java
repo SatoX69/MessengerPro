@@ -16,7 +16,7 @@ import tn.amin.mpro2.orca.datatype.Mention;
 import tn.amin.mpro2.orca.datatype.TextMessage;
 
 public class MessageSentHook extends BaseHook {
-    public static final String DISPATCH_METHOD = "dispatchVIJOOOOOOOOOOOOOOOOOOOOOOOO";
+    public static final String DISPATCH_METHOD = "dispatchVIJOOOOOOOOOOOOOOOOOOOOOOOOO";
 
     public MessageSentHook() {
         super();
@@ -35,15 +35,15 @@ public class MessageSentHook extends BaseHook {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
 
-                if (param.args[5] instanceof String message) {
+                if (param.args[6] instanceof String message) {
 
                     Long threadKey = (Long) param.args[2];
 
-                    String rangeStartsString = (String) param.args[7];
-                    String rangeEndsString = (String) param.args[8];
-                    String threadKeysString = (String) param.args[9];
-                    String typesString = (String) param.args[10];
-                    String replyMessageId = (String) param.args[11];
+                    String rangeStartsString = (String) param.args[8];
+                    String rangeEndsString = (String) param.args[9];
+                    String threadKeysString = (String) param.args[10];
+                    String typesString = (String) param.args[11];
+                    String replyMessageId = (String) param.args[12];
                     TextMessage originalMessage = new TextMessage.Builder(message)
                             .setMentions(Mention.fromDispatchArgs(message, rangeStartsString, rangeEndsString, threadKeysString, typesString))
                             .setReplyMessageId(replyMessageId)
@@ -60,12 +60,12 @@ public class MessageSentHook extends BaseHook {
                     if (refinedMessage == null) return;
 
 //                    Logger.logObjectRecursive(refinedMessage);
-                    param.args[5] = refinedMessage.content;
-                    param.args[7] = Mention.joinRangeStarts(refinedMessage.mentions);
-                    param.args[8] = Mention.joinRangeEnds(refinedMessage.mentions);
-                    param.args[9] = Mention.joinThreadKeys(refinedMessage.mentions);
-                    param.args[10] = Mention.joinTypes(refinedMessage.mentions);
-                    param.args[11] = refinedMessage.replyMessageId;
+                    param.args[6] = refinedMessage.content;
+                    param.args[8] = Mention.joinRangeStarts(refinedMessage.mentions);
+                    param.args[9] = Mention.joinRangeEnds(refinedMessage.mentions);
+                    param.args[10] = Mention.joinThreadKeys(refinedMessage.mentions);
+                    param.args[11] = Mention.joinTypes(refinedMessage.mentions);
+                    param.args[12] = refinedMessage.replyMessageId;
                 }
             }
         }));

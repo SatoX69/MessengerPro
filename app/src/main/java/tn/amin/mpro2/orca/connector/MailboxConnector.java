@@ -54,14 +54,14 @@ public class MailboxConnector {
         preDispatch(notificationScope -> {
             long time = System.currentTimeMillis() * 1000;
             Object[] disptachParams = new Object[] {
-                    9, 65540, threadKey, mailbox.get(), "", textMessage.content, null, null, null, null, null, null, textMessage.replyMessageId != null? 1: 0, 0, null, null, null, time, null, null, null, null, null, null, false, null, notificationScope
+                    9, 65540, threadKey, mailbox.get(), "", 1, textMessage.content, null, null, null, null, null, null, textMessage.replyMessageId != null? 1: 0, 0, null, null, null, time, null, null, null, null, null, null, false, null, notificationScope
             };
 
-            disptachParams[7] = Mention.joinRangeStarts(textMessage.mentions);
-            disptachParams[8] = Mention.joinRangeEnds(textMessage.mentions);
-            disptachParams[9] = Mention.joinThreadKeys(textMessage.mentions);
-            disptachParams[10] = Mention.joinTypes(textMessage.mentions);
-            disptachParams[11] = textMessage.replyMessageId;
+            disptachParams[8] = Mention.joinRangeStarts(textMessage.mentions);
+            disptachParams[9] = Mention.joinRangeEnds(textMessage.mentions);
+            disptachParams[10] = Mention.joinThreadKeys(textMessage.mentions);
+            disptachParams[11] = Mention.joinTypes(textMessage.mentions);
+            disptachParams[12] = textMessage.replyMessageId;
             try {
                 XposedBridge.invokeOriginalMethod(disptach, null, disptachParams);
             } catch (Throwable t) {

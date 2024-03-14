@@ -14,3 +14,4 @@
 .cxx
 app/release/
 app/debug/
+.idea/misc.xml
