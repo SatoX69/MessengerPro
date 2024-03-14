@@ -32,15 +32,18 @@ public class UnsentNotificationRemoveHook extends BaseHook {
             throw new RuntimeException(OrcaUnobfuscator.CLASS_REMOVE_NOTIFICATION_ON_UNSENT + " is null");
         Set<XC_MethodHook.Unhook> hooks = new HashSet<>();
 
-        for (Method method : UnsentNotificationRemoveClass.getDeclaredMethods()) {
-            XC_MethodHook.Unhook hook = XposedBridge.hookMethod(method, new XC_MethodHook() {
-                @Override
-                protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+        var hook = wrap(new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                notifyListenersWithResult((listener) -> ((UnsentNotificationRemoveListener) listener).onUnsentNotificationRemove());
+                if (getListenersReturnValue().isConsumed && (Boolean) getListenersReturnValue().value) {
                     param.setResult(false);
                 }
-            });
-            hooks.add(hook);
-            notifyListeners((listener) -> ((UnsentNotificationRemoveListener) listener).onUnsentNotificationRemove());
+            }
+        });
+
+        for (Method method : UnsentNotificationRemoveClass.getDeclaredMethods()) {
+            hooks.add(XposedBridge.hookMethod(method, hook));
         }
         return hooks;
     }

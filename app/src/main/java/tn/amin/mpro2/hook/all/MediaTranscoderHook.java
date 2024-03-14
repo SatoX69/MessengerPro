@@ -42,7 +42,10 @@ public class MediaTranscoderHook extends BaseHook {
                 XC_MethodHook.Unhook hook = XposedBridge.hookMethod(method, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        param.args = null;
+                        notifyListenersWithResult((listener) -> ((MediaTranscodeHookListener) listener).onMediaTranscode());
+                        if (getListenersReturnValue().isConsumed && (Boolean) getListenersReturnValue().value) {
+                            param.args = null;
+                        }
                     }
                 });
 
@@ -51,24 +54,26 @@ public class MediaTranscoderHook extends BaseHook {
                 XC_MethodHook.Unhook hook = XposedBridge.hookMethod(method, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        if (param.args[0] != null) {
-                            File file = new File(new URI((String) param.args[0]).getPath());
-                            long length = file.length();
-                            final XC_MethodHook.Unhook[] unhook = new XC_MethodHook.Unhook[1];
-                            if (param.args[1] == null) {
-                                final Class<?> TranscodeVideoCompletionCallback = XposedHelpers.findClass("com.facebook.msys.mci.TranscodeVideoCompletionCallback", gateway.classLoader);
-                                Arrays.stream(TranscodeVideoCompletionCallback.getDeclaredMethods()).filter(m -> m.getName().equals("success")).findFirst().ifPresent(successMethod -> unhook[0] = XposedBridge.hookMethod(successMethod, new XC_MethodHook() {
-                                    @Override
-                                    protected void beforeHookedMethod(MethodHookParam param2) throws Throwable {
-                                        param2.args[0] = param.args[0];
-                                        if (unhook[0] != null) {
-                                            unhook[0].unhook();
+                        notifyListenersWithResult((listener) -> ((MediaTranscodeHookListener) listener).onMediaTranscode());
+                        if (getListenersReturnValue().isConsumed && (Boolean) getListenersReturnValue().value) {
+                            if (param.args[0] != null) {
+                                File file = new File(new URI((String) param.args[0]).getPath());
+                                long length = file.length();
+                                final XC_MethodHook.Unhook[] unhook = new XC_MethodHook.Unhook[1];
+                                if (param.args[1] == null) {
+                                    final Class<?> TranscodeVideoCompletionCallback = XposedHelpers.findClass("com.facebook.msys.mci.TranscodeVideoCompletionCallback", gateway.classLoader);
+                                    Arrays.stream(TranscodeVideoCompletionCallback.getDeclaredMethods()).filter(m -> m.getName().equals("success")).findFirst().ifPresent(successMethod -> unhook[0] = XposedBridge.hookMethod(successMethod, new XC_MethodHook() {
+                                        @Override
+                                        protected void beforeHookedMethod(MethodHookParam param2) throws Throwable {
+                                            param2.args[0] = param.args[0];
+                                            if (unhook[0] != null) {
+                                                unhook[0].unhook();
+                                            }
                                         }
-                                    }
-                                }));
+                                    }));
+                                }
                             }
                         }
-
                     }
                 });
 
@@ -77,7 +82,10 @@ public class MediaTranscoderHook extends BaseHook {
                 XC_MethodHook.Unhook hook = XposedBridge.hookMethod(method, new XC_MethodHook() {
                     @Override
                     protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-                        param.args = null;
+                        notifyListenersWithResult((listener) -> ((MediaTranscodeHookListener) listener).onMediaTranscode());
+                        if (getListenersReturnValue().isConsumed && (Boolean) getListenersReturnValue().value) {
+                            param.args = null;
+                        }
                     }
                 });
 

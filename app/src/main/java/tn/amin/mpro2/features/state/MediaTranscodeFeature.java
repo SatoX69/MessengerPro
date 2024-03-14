@@ -39,7 +39,7 @@ public class MediaTranscodeFeature extends Feature implements MediaTranscoderHoo
     @Override
     public HookListenerResult<Boolean> onMediaTranscode() {
         Logger.verbose("isEnabled: " + isEnabled());
-        return HookListenerResult.consume(true);
+        return HookListenerResult.consume(isEnabled());
     }
 
 }

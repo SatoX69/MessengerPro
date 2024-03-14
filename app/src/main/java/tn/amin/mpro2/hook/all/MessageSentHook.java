@@ -16,6 +16,7 @@ import tn.amin.mpro2.orca.datatype.Mention;
 import tn.amin.mpro2.orca.datatype.TextMessage;
 
 public class MessageSentHook extends BaseHook {
+    public static final String DISPATCH_METHOD_NEW = "dispatchVOOOOOOO";
     public static final String DISPATCH_METHOD = "dispatchVIJOOOOOOOOOOOOOOOOOOOOOOOOO";
 
     public MessageSentHook() {
@@ -29,12 +30,66 @@ public class MessageSentHook extends BaseHook {
 
     @Override
     protected Set<XC_MethodHook.Unhook> injectInternal(OrcaGateway gateway) {
-        final Class<?> MailboxCoreJNI = XposedHelpers.findClass(OrcaClassNames.MAILBOX_CORE_JNI, gateway.classLoader);
+        final Class<?> MailboxSDKJNI = XposedHelpers.findClass(OrcaClassNames.MAILBOX_SDK_JNI, gateway.classLoader);
+        XposedBridge.hookAllMethods(MailboxSDKJNI, DISPATCH_METHOD_NEW, wrap(new XC_MethodHook() {
+            @Override
+            protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
+                Logger.info("====> MESSAGE_SEND[=NEW] ");
+                if (param.args[0] == Integer.valueOf(61)) {
+                    String message = (String) param.args[3];
 
+                    Object options = param.args[4];
+                    if (options != null && !options.getClass().getName().equals(
+                            "com.facebook.sdk.mca.MailboxSDK$SendTextMessageOptionalParams"
+                    )) return;
+
+                    //Object mentions = XposedHelpers.getObjectField(options, "mentions");
+                    //Object reply = XposedHelpers.getObjectField(options, "reply");
+
+                    Long threadKey = gateway.currentThreadKey;
+                    if (threadKey == null) {
+                        Logger.info("ThreadKey is null, ignoring MessageSent hooks");
+                        return;
+                    }
+
+                    /*String rangeStartsString = (String) XposedHelpers.getObjectField(mentions, "mentionOffSets");
+                    String rangeEndsString = (String) XposedHelpers.getObjectField(mentions, "mentionLengths");
+                    String threadKeysString = (String) XposedHelpers.getObjectField(mentions, "mentionIds");
+                    String typesString = (String) XposedHelpers.getObjectField(mentions, "mentionTypes");
+                    String replyMessageId = (String) XposedHelpers.getObjectField(reply, "replySourceId");*/
+                    TextMessage originalMessage = new TextMessage.Builder(message)
+                            //.setMentions(Mention.fromDispatchArgs(message, rangeStartsString, rangeEndsString, threadKeysString, typesString))
+                            //.setReplyMessageId(replyMessageId)
+                            .build();
+
+                    notifyListenersWithResult((listener) -> ((MessageSentListener) listener).onMessageSent(originalMessage, threadKey));
+
+                    if (getListenersReturnValue().isConsumed && getListenersReturnValue().value == null) {
+                        param.setResult(null);
+                        return;
+                    }
+
+                    TextMessage refinedMessage = (TextMessage) getListenersReturnValue().value;
+
+                    if (refinedMessage == null) return;
+
+//                    Logger.logObjectRecursive(refinedMessage);
+                    param.args[3] = refinedMessage.content;
+                    /*param.args[8] = Mention.joinRangeStarts(refinedMessage.mentions);
+                    param.args[9] = Mention.joinRangeEnds(refinedMessage.mentions);
+                    param.args[10] = Mention.joinThreadKeys(refinedMessage.mentions);
+                    param.args[11] = Mention.joinTypes(refinedMessage.mentions);
+                    param.args[12] = refinedMessage.replyMessageId;*/
+                }
+            }
+        }));
+
+
+        final Class<?> MailboxCoreJNI = XposedHelpers.findClass(OrcaClassNames.MAILBOX_CORE_JNI, gateway.classLoader);
         return XposedBridge.hookAllMethods(MailboxCoreJNI, DISPATCH_METHOD, wrap(new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
-
+                Logger.info("====> MESSAGE_SEND ");
                 if (param.args[6] instanceof String message) {
 
                     Long threadKey = (Long) param.args[2];

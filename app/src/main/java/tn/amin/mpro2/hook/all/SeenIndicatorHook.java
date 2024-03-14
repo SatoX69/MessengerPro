@@ -1,5 +1,6 @@
 package tn.amin.mpro2.hook.all;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import de.robv.android.xposed.XC_MethodHook;
@@ -27,8 +28,8 @@ public class SeenIndicatorHook extends BaseHook {
 
     @Override
     protected Set<XC_MethodHook.Unhook> injectInternal(OrcaGateway gateway) {
-        final Class<?> MailboxCoreJNI = XposedHelpers.findClass(OrcaClassNames.MAILBOX_SDK_JNI, gateway.classLoader);
-        return XposedBridge.hookAllMethods(MailboxCoreJNI, "dispatchVJOOOO", wrap(new XC_MethodHook() {
+        final Class<?> MailboxSDKJNI = XposedHelpers.findClass(OrcaClassNames.MAILBOX_SDK_JNI, gateway.classLoader);
+        var wrapped = wrap(new XC_MethodHook() {
             @Override
             protected void beforeHookedMethod(MethodHookParam param) throws Throwable {
                 Integer apiCode = gateway.unobfuscator.getAPICode(OrcaUnobfuscator.API_MESSAGE_SEEN);
@@ -47,8 +48,12 @@ public class SeenIndicatorHook extends BaseHook {
                 }
 
                 // Fallback method
-                else if (param.args[2].getClass().getName().equals(OrcaClassNames.MAILBOX) &&
-                        param.args[3].getClass().getName().equals(Long.class.getName())) {
+                else if (
+                        (param.args[1].getClass().getName().equals(OrcaClassNames.MAILBOX) ||
+                                param.args[2].getClass().getName().equals(OrcaClassNames.MAILBOX)
+                ) &&
+                        (param.args[3] == null || param.args[3].getClass().getName().equals(Long.class.getName()))
+                ) {
 
                     Logger.verbose("Inside seen indicator dispatch");
                     // Inside seen indicator dispatch
@@ -60,7 +65,12 @@ public class SeenIndicatorHook extends BaseHook {
                     }
                 }
             }
-        }));
+        });
+
+        Set<XC_MethodHook.Unhook> unhooks = new HashSet<>();
+        unhooks.addAll(XposedBridge.hookAllMethods(MailboxSDKJNI, "dispatchVOOOOO", wrapped)); // old
+        unhooks.addAll(XposedBridge.hookAllMethods(MailboxSDKJNI, "dispatchVJOOOO", wrapped));
+        return unhooks;
     }
 
     public interface SeenIndicatorListener {

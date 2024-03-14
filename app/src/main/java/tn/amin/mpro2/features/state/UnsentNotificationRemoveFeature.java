@@ -44,6 +44,6 @@ public class UnsentNotificationRemoveFeature extends Feature implements UnsentNo
     @Override
     public HookListenerResult<Boolean> onUnsentNotificationRemove() {
         Logger.verbose("isEnabled: " + isEnabled());
-        return HookListenerResult.consume(true);
+        return HookListenerResult.consume(isEnabled());
     }
 }
