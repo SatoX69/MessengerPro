@@ -39,6 +39,10 @@ import tn.amin.mpro2.features.util.message.command.api.LatexAPI;
 import tn.amin.mpro2.features.util.message.command.api.RedditAPI;
 import tn.amin.mpro2.features.util.message.command.api.UrbanAPI;
 import tn.amin.mpro2.features.util.message.command.api.WikipediaAPI;
+
+// GROQ
+import tn.amin.mpro2.features.util.message.command.api.GroqAPI;
+
 import tn.amin.mpro2.features.util.message.command.provider.AIProviderInteracter;
 import tn.amin.mpro2.file.FileHelper;
 import tn.amin.mpro2.file.StorageConstants;
@@ -66,6 +70,7 @@ public class CommandsManager {
         mCommands.add(new CommandFields("wikipedia", "stub"));
         mCommands.add(new CommandFields("like", "stub"));
         mCommands.add(new CommandFields("empty", "stub"));
+        mCommands.add(new CommandFields("groq", "stub"));
     }
 
     public CommandsManager(OrcaGateway gateway) {
@@ -88,6 +93,7 @@ public class CommandsManager {
         mDispatcher.register(literal("empty").executes(c -> comEmpty(1, 1, c))
                 .then(argument("row", integer(1)).executes(c -> comEmpty(getInteger(c, "row"), 1, c))
                         .then(argument("column", integer(1)).executes(c -> comEmpty(getInteger(c, "row"), getInteger(c, "column"), c)))));
+        Dispatcher.register(literal("groq").then(argument("prompt", greedyString()).executes(c -> comAPI("groq", c))));
         mDispatcher.register(literal("ai")
                 .then(argument("prompt", greedyString()).executes(c -> comAPI("ai", c))));
         mDispatcher.register(literal("latex")
@@ -133,6 +139,14 @@ public class CommandsManager {
         if (completion == null || StringUtils.isBlank(completion)) completion = gateway.res.getString(R.string.unexpected_error);
 
         return new ApiResult.SendText(completion);
+    }
+    
+    
+    // Edited
+    private ApiResult comGroq(String prompt) {
+      if (!prompt) prompt = "Hi, I am Gay";
+      String response =  GroqAPI.cookGroq(prompt)
+      return ApiResult.SendText(response)
     }
 
     private ApiResult comReddit(String subreddit, String sort) {
@@ -259,6 +273,7 @@ public class CommandsManager {
                         apiResult = comWikipedia(getString(c, "term"), getStringOrNull(c, "language"));
                 case "search" -> apiResult = comSearch(getString(c, "term"));
                 case "ai" -> apiResult = comAI(getString(c, "prompt"));
+                case "groq" -> apiResult = comGroq(getString(c, "prompt"));
                 case "latex" -> apiResult = comLatex(getString(c, "expression"));
                 default -> {
                     XposedBridge.log(new UnknownError());
@@ -276,7 +291,6 @@ public class CommandsManager {
         }).start();
         return 1;
     }
-
 
     private static String getStringOrNull(CommandContext c, String key) {
         String s;
