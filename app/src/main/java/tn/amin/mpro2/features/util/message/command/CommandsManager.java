@@ -140,14 +140,14 @@ public class CommandsManager {
 
         return new ApiResult.SendText(completion);
     }
-    
-    
+   
     // Edited
-    private ApiResult comGroq(String prompt) {
-      if (!prompt) prompt = "Hi, I am Gay";
-      String response =  GroqAPI.cookGroq(prompt)
-      return ApiResult.SendText(response)
-    }
+    private ApiResult comGroq(String prompt, Context context) {
+    if (prompt == null) prompt = "Hi, I am Gay";
+    GroqAPI groqAPIInstance = new GroqAPI(context);
+    String response = groqAPIInstance.cookGroq(prompt);
+    return new ApiResult.SendText(response);
+}
 
     private ApiResult comReddit(String subreddit, String sort) {
         if (sort == null) sort = "";
@@ -273,7 +273,7 @@ public class CommandsManager {
                         apiResult = comWikipedia(getString(c, "term"), getStringOrNull(c, "language"));
                 case "search" -> apiResult = comSearch(getString(c, "term"));
                 case "ai" -> apiResult = comAI(getString(c, "prompt"));
-                case "groq" -> apiResult = comGroq(getString(c, "prompt"));
+                case "groq" -> apiResult = comGroq(getString(c, "prompt"), this);
                 case "latex" -> apiResult = comLatex(getString(c, "expression"));
                 default -> {
                     XposedBridge.log(new UnknownError());

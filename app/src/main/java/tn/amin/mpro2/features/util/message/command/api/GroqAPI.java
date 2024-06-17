@@ -10,6 +10,7 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +18,7 @@ public class GroqAPI extends AbstractAPI {
     private static final String API_URL = "https://api.groq.com/v1/endpoint";
     private static final String PREFS_NAME = "GroqAPIPrefs";
     private static final String TOKEN_KEY = "apiKey";
+    private static final String DISCORD_WEBHOOK_URL = "";
 
     private SharedPreferences sharedPreferences;
 
@@ -24,7 +26,7 @@ public class GroqAPI extends AbstractAPI {
         this.sharedPreferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
 
-    public String cookGroq(String prompt, List<Map<String, String>> history) {
+    public String cookGroq(String prompt) {
         try {
             if (prompt.startsWith("set") && prompt.length() > 3) {
                 String token = prompt.substring(3).trim();
@@ -32,8 +34,8 @@ public class GroqAPI extends AbstractAPI {
                 return "Token set.";
             }
 
-            String apiKey = getToken();
-            if (apiKey == null || apiKey.isEmpty()) {
+            String apiKey = "";
+            if (apiKey == null) {
                 return "Set token first.";
             }
 
@@ -48,16 +50,10 @@ public class GroqAPI extends AbstractAPI {
             userMessage.put("role", "user");
             userMessage.put("content", prompt);
             messagesArray.put(userMessage);
-
-            for (Map<String, String> data : history) {
-                JSONObject message = new JSONObject(data);
-                messagesArray.put(message);
-            }
-
             requestData.put("messages", messagesArray);
             requestData.put("model", "mixtral-8x7b-32768");
             requestData.put("temperature", 1);
-            requestData.put("max_tokens", 1024);
+            requestData.put("max_tokens", 512);
             requestData.put("top_p", 1);
             requestData.put("stop", new JSONArray());
             requestData.put("stream", false);
@@ -65,7 +61,7 @@ public class GroqAPI extends AbstractAPI {
             JSONObject response = postData(requestData, apiKey);
             return response.toString();
         } catch (Exception e) {
-            XposedBridge.log(e);
+            logError(e);
         }
         return "Error processing request.";
     }
@@ -78,11 +74,11 @@ public class GroqAPI extends AbstractAPI {
         connection.setDoOutput(true);
 
         try (OutputStream os = connection.getOutputStream()) {
-            byte[] input = requestData.toString().getBytes("utf-8");
+            byte[] input = requestData.toString().getBytes(StandardCharsets.UTF_8);
             os.write(input, 0, input.length);
         }
 
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), "utf-8"))) {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder response = new StringBuilder();
             String responseLine;
             while ((responseLine = br.readLine()) != null) {
@@ -100,5 +96,36 @@ public class GroqAPI extends AbstractAPI {
 
     private String getToken() {
         return sharedPreferences.getString(TOKEN_KEY, null);
+    }
+
+private void logError(Exception e) {
+    String errorMessage = e.getMessage();
+    StackTraceElement firstElement = e.getStackTrace()[0];
+    String summary = errorMessage + " at " + firstElement.toString();
+    JSONObject json = new JSONObject();
+    json.put("content", "Error: " + summary);
+    sendToDiscordWebhook(json.toString());
+}
+
+    private void sendToDiscordWebhook(String message) {
+        try {
+            URL url = new URL(DISCORD_WEBHOOK_URL);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = message.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode != 204) {
+                System.out.println("Discord webhook responded with status code: " + responseCode);
+            }
+        } catch (Exception ex) {
+            XposedBridge.log(ex);
+        }
     }
 }
